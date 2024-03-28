@@ -1,0 +1,4 @@
+runner\CucumberTestSuite.class
+runner\ExchangeRateTesting.class
+stepdefinition\ExchangeRateStepDefinitions.class
+stepdefinition\ParameterDefinitions.class

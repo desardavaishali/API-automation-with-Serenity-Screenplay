@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "result": {"type": "string"},
+    "provider": {"type": "string"},
+    "documentation": {"type": "string"},
+    "terms_of_use": {"type": "string"},
+    "time_last_update_unix": {"type": "number"},
+    "time_last_update_utc": {"type": "string"},
+    "time_next_update_unix": {"type": "number"},
+    "time_next_update_utc": {"type": "string"},
+    "time_eol_unix": {"type": "number"},
+    "base_code": {"type": "string"},
+    "rates": {
+      "type": "object",
+      "additionalProperties": {"type": "number"}
+    }
+  },
+  "required": ["result", "provider", "documentation", "terms_of_use", "time_last_update_unix",
+    "time_last_update_utc", "time_next_update_unix", "time_next_update_utc", "time_eol_unix",
+    "base_code", "rates"]
+}
