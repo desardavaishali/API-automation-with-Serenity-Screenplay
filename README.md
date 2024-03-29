@@ -21,19 +21,21 @@ Serenity Screenplay
 **Getting Started:**
 Clone the project: Replace "REPOSITORY_URL" with the actual URL for your project repository.
 
-bash
-Copy code
-git clone REPOSITORY_URL
+```bash
+git clone [REPOSITORY_URL](https://github.com/desardavaishali/r3ExchangeRateAPI.git)
+```
+
 Set up dependencies: Ensure you have Maven installed and run the following command to download dependencies:
 
-bash
-Copy code
+```bash
 mvn clean install
+```
+
 Run Tests: Execute the tests with the following command:
 
-bash
-Copy code
+```bash
 mvn verify
+```
 
 
 **Testing Exchange Rates:**
