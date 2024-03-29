@@ -5,7 +5,7 @@ import net.serenitybdd.screenplay.Actor;
 import net.serenitybdd.screenplay.rest.abilities.CallAnApi;
 import net.serenitybdd.screenplay.rest.exception.APIError;
 import net.serenitybdd.screenplay.rest.interactions.Get;
-import net.serenitybdd.screenplay.rest.questions.NumberOfCurrencyPairs;
+import tasks.NumberOfCurrencyPairs;
 import net.serenitybdd.screenplay.rest.questions.TheResponse;
 import org.assertj.core.api.SoftAssertions;
 import org.everit.json.schema.Schema;

@@ -9,9 +9,10 @@ import net.serenitybdd.junit.runners.SerenityRunner;
 import net.serenitybdd.rest.SerenityRest;
 import net.serenitybdd.screenplay.Actor;
 import net.serenitybdd.screenplay.rest.exception.APIError;
+
 import net.serenitybdd.screenplay.rest.abilities.CallAnApi;
 import net.serenitybdd.screenplay.rest.interactions.Get;
-import net.serenitybdd.screenplay.rest.questions.NumberOfCurrencyPairs;
+import tasks.NumberOfCurrencyPairs;
 import net.serenitybdd.screenplay.rest.questions.TheResponse;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.loader.SchemaLoader;
@@ -169,7 +170,7 @@ public class ExchangeRateTesting {
         JsonNode responseJson = objectMapper.readTree(responseBody);
 
         // Load the JSON schema template
-        InputStream schemaInputStream = getClass().getResourceAsStream("/schema_template.json");
+        InputStream schemaInputStream = getClass().getResourceAsStream("/src/test/schema.json");
 
         JSONTokener schemaToken = new JSONTokener(schemaInputStream);
         JSONObject schemaJson = new JSONObject(schemaToken);

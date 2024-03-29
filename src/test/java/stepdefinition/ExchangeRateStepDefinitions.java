@@ -1,46 +1,33 @@
 package stepdefinition;
 
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import net.serenitybdd.screenplay.Actor;
-import net.serenitybdd.screenplay.rest.abilities.CallAnApi;
-import net.serenitybdd.screenplay.rest.exception.APIError;
-import net.serenitybdd.screenplay.rest.interactions.Get;
-import net.serenitybdd.screenplay.rest.questions.NumberOfCurrencyPairs;
-import net.serenitybdd.screenplay.rest.response.ExchangeRateResponse;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.SoftAssertions;
-import org.everit.json.schema.Schema;
-import org.everit.json.schema.loader.SchemaLoader;
-import org.json.JSONObject;
-import org.json.JSONTokener;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.time.Duration;
-import java.time.Instant;
+import response.ExchangeRateResponse;
+import tasks.DeserializeExchangeRateResponse;
+import tasks.MakeGetRequest;
+import tasks.NumberOfCurrencyPairs;
+import tasks.VerifyResponseTime;
+import tasks.ApiResponseValidator;
 
 import static net.serenitybdd.rest.SerenityRest.lastResponse;
 import static net.serenitybdd.screenplay.GivenWhenThen.seeThat;
 import static net.serenitybdd.screenplay.rest.questions.ResponseConsequence.seeThatResponse;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.equalTo;
 
 
 public class ExchangeRateStepDefinitions {
 
-        @Given("{actor} makes a GET request to {string}")
-        public void makeGetRequest(Actor actor, String endpoint) {
-            String baseURL = "https://open.er-api.com/v6"; // Provide the correct base URL here
-            CallAnApi callAnApi = CallAnApi.at(baseURL);
-            actor.whoCan(callAnApi);
+    @Given("{actor} makes a GET request to {string}")
+    public void makeGetRequest(Actor actor, String endpoint) {
+        actor.attemptsTo(
+                MakeGetRequest.toEndpoint(endpoint)
+        );
+    }
 
-            actor.attemptsTo(
-                    Get.resource(endpoint)
-            );
-        }
 
         @When("the response is received")
         public void receiveResponse() {
@@ -48,95 +35,75 @@ public class ExchangeRateStepDefinitions {
         }
 
         @Then("{actor} receives the response status code {int}")
-        public void verifyResponseStatusCode(Actor actor, int statusCode) {
+        public void verifyResponseStatus(Actor actor, int statusCode) {
             actor.should(
                     seeThatResponse("The response status code",
                             response -> response.statusCode(equalTo(statusCode)))
             );
         }
 
-        @Then("{actor} sees the response time should be less than or equal to {int} seconds")
-        public void verifyResponseTime(Actor actor, int seconds) {
-            Instant beforeRequest = Instant.now();
+    @Then("{actor} sees the response time should be less than or equal to {int} seconds")
+    public void verifyResponseTime(Actor actor, int seconds) {
+        actor.attemptsTo(
+                VerifyResponseTime.isLessThanOrEqualTo(seconds)
+        );
+    }
 
-            actor.should(
-                    seeThat("The API response time",
-                            actor1 -> {
-                                Instant afterRequest = Instant.now();
-                                Duration duration = Duration.between(beforeRequest, afterRequest);
-                                System.out.println("API response time: " + duration.getSeconds() + " seconds"); // Clearer output
-                                return (int) duration.getSeconds(); // Cast to int
-                            },
-                            lessThanOrEqualTo(seconds)) // Assert in seconds
-                            .orComplainWith(APIError.class, "API response time was greater than " + seconds + " seconds")
-            );
-        }
     @Then("{actor} looks for the number of currency pairs returned should be {int}")
     public void verifyNumberOfCurrencyPairs(Actor actor, int expectedPairs) {
         actor.should(
                 seeThat("The number of currency pairs", new NumberOfCurrencyPairs(), equalTo(expectedPairs))
         );
     }
+
     @Then("{actor} looks for the USD to AED rate should be greater than or equal to {double}")
     public void verifyRateGreaterThanOrEqualTo(Actor actor, double lowerBound) {
-        actor.should(
-                seeThat("The USD to AED rate",
-                        actor1 -> lastResponse().jsonPath().getDouble("rates.AED"),
-                        both(greaterThanOrEqualTo(lowerBound)).and(lessThanOrEqualTo(3.7))
-                )
-                        .orComplainWith(APIError.class, "USD to AED rate is not within the range of 3.6 to 3.7")
-        );
+        actor.attemptsTo(DeserializeExchangeRateResponse.fromPreviousResponse());
+
+        ExchangeRateResponse exchangeRateResponse = actor.recall("exchangeRateResponse");
+
+        // Perform assertions using the parsed Java object
+        Assertions.assertThat(exchangeRateResponse.getRates().get("AED")).isGreaterThanOrEqualTo(lowerBound);
     }
+
 
     @Then("{actor} looks for the USD to AED rate should be less than or equal to {double}")
     public void verifyRateLessThanOrEqualTo(Actor actor, double upperBound) {
-        actor.should(
-                seeThat("The USD to AED rate",
-                        actor1 -> lastResponse().jsonPath().getDouble("rates.AED"),
-                        lessThanOrEqualTo(upperBound)
-                )
-                        .orComplainWith(APIError.class, "USD to AED rate is not within the range of 3.6 to 3.7")
-        );
+        actor.attemptsTo(DeserializeExchangeRateResponse.fromPreviousResponse());
+
+        ExchangeRateResponse exchangeRateResponse = actor.recall("exchangeRateResponse");
+
+        Assertions.assertThat(exchangeRateResponse.getRates().get("AED")).isLessThanOrEqualTo(upperBound);
     }
 
     @Then("{actor} looks for the API response status code should be less than or equal to {int}")
     public void verifyResponseStatusCodes(Actor actor, int expectedStatusCode) {
-        actor.should(
-                seeThatResponse("The API response",
-                        response -> response.statusCode(lessThanOrEqualTo(expectedStatusCode))
-                )
+        actor.attemptsTo(
+                tasks.VerifyResponseStatus.is(expectedStatusCode)
         );
     }
 
     @Then("{actor} looks for the response status code for the incorrect endpoint should be {int}")
     public void verifyIncorrectEndpointResponseStatusCode(Actor actor, int expectedStatusCode) {
-        actor.should(
-                seeThatResponse("The response status code for the incorrect endpoint",
-                        response -> response.statusCode(equalTo(expectedStatusCode))
-                )
+        actor.attemptsTo(
+                tasks.VerifyResponseStatus.forEndpoint(expectedStatusCode, "incorrect")
         );
     }
-
 
     @Then("{actor} looks for the response body for the incorrect endpoint should contain {string}")
     public void verifyIncorrectEndpointResponseBodyContains(Actor actor, String expectedContent) {
-        actor.should(
-                seeThat("The response body for the incorrect endpoint",
-                        actor1 -> lastResponse().getBody().asString(),
-                        containsString(expectedContent)
-                )
+        actor.attemptsTo(
+                tasks.VerifyResponseStatus.forEndpointWithError(404, "incorrect", expectedContent)
         );
     }
-
 
     @Then("{actor} looks for the response status code for USD should be {int}")
     public void verifyUSDResponseStatusCode(Actor actor, int expectedStatusCode) {
-        actor.should(
-                seeThatResponse("The response status code for USD",
-                        response -> response.statusCode(equalTo(expectedStatusCode))
-                )
+        actor.attemptsTo(
+                tasks.VerifyResponseStatus.forEndpoint(expectedStatusCode, "USD")
         );
     }
+
 
     @Then("{actor} looks for the response body for USD should have {string} equal to {string}")
     public void verifyUSDResponseBody(Actor actor, String jsonPath, String expectedValue) {
@@ -148,53 +115,21 @@ public class ExchangeRateStepDefinitions {
         );
     }
 
+
+
     @Then("{actor} looks for the API response should match the JSON schema")
-    public void verifyApiResponseMatchesJsonSchema(Actor actor) throws IOException {
-        // Given
-        actor.attemptsTo(
-                Get.resource("/latest/USD")
-        );
-
-        // Extract raw response body as a String
-        String responseBody = lastResponse().asString();
-
-        // Load the JSON schema template
-        InputStream schemaInputStream = getClass().getResourceAsStream("/schema_template.json");
-
-        assert schemaInputStream != null;
-        JSONTokener schemaToken = new JSONTokener(schemaInputStream);
-        JSONObject schemaJson = new JSONObject(schemaToken);
-
-        // Create a JSON schema from the loaded schema JSON
-        Schema schema = SchemaLoader.load(schemaJson);
-
-        // Validate the API response against the JSON schema
-        try {
-            schema.validate(new JSONObject(responseBody));
-        } catch (Exception validationError) {
-            String errorMessage = "API response does not match JSON schema: " + validationError.getMessage();
-            throw new APIError(errorMessage);
-        }
-
-        // Convert JSON response to Java object using ObjectMapper
-        ObjectMapper objectMapper = new ObjectMapper();
-        ExchangeRateResponse exchangeRateResponse = objectMapper.readValue(responseBody, ExchangeRateResponse.class);
-
-        // Perform assertions using the parsed Java object
-        Assertions.assertThat(exchangeRateResponse.getResult()).isNotNull();
-        Assertions.assertThat(exchangeRateResponse.getRates()).isNotEmpty();
-        Assertions.assertThat(exchangeRateResponse.getRates().containsKey("USD")).isTrue();
-        Assertions.assertThat(exchangeRateResponse.getRates().get("USD")).isGreaterThan(0.0);
+    public void verifyApiResponseMatchesJsonSchema(Actor actor) {
+        ApiResponseValidator.validateApiResponseAgainstSchema(actor);
     }
 
-        @Then("{actor} should not complain with an APIError")
-        public void shouldNotComplainWithAPIError(Actor actor) {
-            SoftAssertions softly = new SoftAssertions();
-            softly.assertAll();
+    @Then("the API user should not complain with an APIError")
+    public void shouldNotComplainWithAPIError() {
+         SoftAssertions softly = new SoftAssertions();
+         softly.assertAll();
         }
 
-        @Given("the API user exists")
-        public void theAPIUserExists() {
+    @Given("the API user exists")
+    public void theAPIUserExists() {
         }
     }
 
