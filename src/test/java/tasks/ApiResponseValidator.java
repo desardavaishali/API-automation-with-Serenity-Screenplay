@@ -6,6 +6,7 @@ import com.github.fge.jsonschema.core.exceptions.ProcessingException;
 import com.github.fge.jsonschema.core.report.ProcessingReport;
 import com.github.fge.jsonschema.main.JsonSchema;
 import com.github.fge.jsonschema.main.JsonSchemaFactory;
+import net.serenitybdd.rest.SerenityRest;
 import net.serenitybdd.screenplay.Actor;
 
 import java.io.File;
@@ -14,11 +15,13 @@ import java.io.IOException;
 public class ApiResponseValidator {
 
     public static void validateApiResponseAgainstSchema(Actor actor) {
-        String responseJson = actor.recall("responseBody");
-      //  System.out.println(responseJson);
+        // Extract the JSON response data using SerenityRest
+        String responseJson = SerenityRest.lastResponse().asString();
+
         ObjectMapper mapper = new ObjectMapper();
         JsonNode responseNode;
         try {
+            // Parse the response JSON using ObjectMapper
             responseNode = mapper.readTree(responseJson);
         } catch (IOException e) {
             throw new RuntimeException("Error parsing API response body", e);
@@ -26,8 +29,8 @@ public class ApiResponseValidator {
 
         JsonNode schemaNode;
         try {
+            // Load the schema file using ObjectMapper
             schemaNode = mapper.readTree(new File("apiSchema.json"));
-          //  System.out.println(schemaNode);
         } catch (IOException e) {
             throw new RuntimeException("Error reading schema file", e);
         }
@@ -61,4 +64,3 @@ public class ApiResponseValidator {
         }
     }
 }
-
