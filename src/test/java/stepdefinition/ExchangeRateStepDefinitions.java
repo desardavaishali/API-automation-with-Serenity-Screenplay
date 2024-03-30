@@ -7,11 +7,7 @@ import net.serenitybdd.screenplay.Actor;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.SoftAssertions;
 import response.ExchangeRateResponse;
-import tasks.DeserializeExchangeRateResponse;
-import tasks.MakeGetRequest;
-import tasks.NumberOfCurrencyPairs;
-import tasks.VerifyResponseTime;
-import tasks.ApiResponseValidator;
+import tasks.*;
 
 import static net.serenitybdd.rest.SerenityRest.lastResponse;
 import static net.serenitybdd.screenplay.GivenWhenThen.seeThat;
@@ -29,18 +25,18 @@ public class ExchangeRateStepDefinitions {
     }
 
 
-        @When("the response is received")
-        public void receiveResponse() {
-            // Nothing to implement here as it's a generic step
-        }
+    @When("the response is received")
+    public void receiveResponse() {
+        // Nothing to implement here as it's a generic step
+    }
 
-        @Then("{actor} receives the response status code {int}")
-        public void verifyResponseStatus(Actor actor, int statusCode) {
-            actor.should(
-                    seeThatResponse("The response status code",
-                            response -> response.statusCode(equalTo(statusCode)))
-            );
-        }
+    @Then("{actor} receives the response status code {int}")
+    public void verifyResponseStatus(Actor actor, int statusCode) {
+        actor.should(
+                seeThatResponse("The response status code",
+                        response -> response.statusCode(equalTo(statusCode)))
+        );
+    }
 
     @Then("{actor} sees the response time should be less than or equal to {int} seconds")
     public void verifyResponseTime(Actor actor, int seconds) {
@@ -116,21 +112,32 @@ public class ExchangeRateStepDefinitions {
     }
 
 
-
     @Then("{actor} looks for the API response should match the JSON schema")
     public void verifyApiResponseMatchesJsonSchema(Actor actor) {
         ApiResponseValidator.validateApiResponseAgainstSchema(actor);
     }
 
+
     @Then("the API user should not complain with an APIError")
     public void shouldNotComplainWithAPIError() {
-         SoftAssertions softly = new SoftAssertions();
-         softly.assertAll();
-        }
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertAll();
+    }
 
     @Given("the API user exists")
     public void theAPIUserExists() {
-        }
     }
+
+    @Then("{actor} receives a valid price {int} for currency {string}")
+    public void verifyValidPrice(Actor actor, int rate, String currency) {
+
+            actor.attemptsTo(DeserializeExchangeRateResponse.fromPreviousResponse());
+
+            ExchangeRateResponse exchangeRateResponse = actor.recall("exchangeRateResponse");
+
+            Assertions.assertThat(exchangeRateResponse.getRates().get(currency)).isEqualTo(rate);
+        }
+}
+
 
 
